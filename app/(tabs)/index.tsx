@@ -11,21 +11,38 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import Item from "../components/Item";
-import {
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-} from "react-native-reanimated";
+import uuid from "react-native-uuid";
 
-const data = [...Array(5)];
+interface ItemProps {
+  id: string | number[];
+  text: string;
+}
 
 export default function TabOneScreen() {
   const [edit, setEdit] = useState<boolean>(false);
+  const [data, setData] = useState<ItemProps[]>([]);
+
+  const handleRemove = (id: string) => {
+    const newArr = data.filter((d) => {
+      return d.id !== id;
+    });
+    setData(newArr);
+  };
+
+  const handleAddData = () => {
+    const today = new Date().toDateString();
+    const t = new Date().toLocaleTimeString();
+
+    const newItem = `${today}, ${t}`;
+    const id = uuid.v4();
+
+    setData([...data, { id, text: newItem }]);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleAddData}>
           <Ionicons name="add-sharp" color={"#007AFF"} size={30} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setEdit(!edit)}>
@@ -38,7 +55,15 @@ export default function TabOneScreen() {
         <FlatList
           style={{ borderRadius: 15 }}
           data={data}
-          renderItem={({ item, index }) => <Item key={index} edit={edit} />}
+          renderItem={({ item, index }) => (
+            <Item
+              key={index}
+              index={index}
+              edit={edit}
+              item={item}
+              onRemove={handleRemove}
+            />
+          )}
         />
       </View>
     </SafeAreaView>

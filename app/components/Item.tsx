@@ -1,30 +1,46 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, StyleSheet, Text, TouchableOpacity } from "react-native";
 import React, { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Animated, {
+  Easing,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
 } from "react-native-reanimated";
 
 interface Props {
+  onRemove: (arg1: string) => void;
+  index: any;
   edit: boolean;
+  item: any;
 }
 
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+// const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+const AnimatedRemoveButton = Animated.createAnimatedComponent(Pressable);
+const AnimatedDeleteButton = Animated.createAnimatedComponent(Pressable);
 
-const Item = ({ edit }: Props) => {
+const Item = ({ edit, item, index, onRemove }: Props) => {
   const router = useRouter();
   const textValue = useSharedValue(0);
   const btnValue = useSharedValue(0);
+  const opacity = useSharedValue(1);
+  const [toDelete, setToDelete] = useState<any>(null);
+
+  const animatedMainView = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+      // transform: [{ translateY: opacity.value * 20 }], // You can customize the exit animation here
+    };
+  });
 
   const animatedText = useAnimatedStyle(() => {
     return {
       transform: [
         {
-          translateX: interpolate(textValue.value, [0, 0.5, 1], [-5, 10, 20]),
+          translateX: interpolate(textValue.value, [0, 0.5, 1], [-10, 10, 20]),
         },
       ],
     };
@@ -40,6 +56,11 @@ const Item = ({ edit }: Props) => {
     };
   });
 
+  const handleDelete = () => {
+    opacity.value = withTiming(0, { duration: 1000, easing: Easing.linear });
+    onRemove(item.id);
+  };
+
   useEffect(() => {
     if (edit) {
       textValue.value = withSpring(1);
@@ -49,28 +70,30 @@ const Item = ({ edit }: Props) => {
       btnValue.value = withSpring(0);
     }
   }, [edit]);
-
+  console.log(toDelete);
   return (
-    <View style={{ backgroundColor: "white", flexDirection: "row" }}>
-      <AnimatedTouchable
-        style={styles.container}
+    <Animated.View
+      // entering={SlideInLeft.delay(index * 1.5).duration(900)}
+      style={[styles.main, animatedMainView]}
+    >
+      <TouchableOpacity
+        style={[styles.container]}
         activeOpacity={0.2}
-        disabled={edit}
-        onPress={() => router.push("/(tabs)/item")}
+        onPress={() => !edit && router.push("/(tabs)/item")}
       >
-        <Animated.View style={[animatedButton]}>
-          <Ionicons
-            name="ios-remove-circle-sharp"
-            size={25}
-            color={"red"}
-            //   style={{ marginRight: 10 }}
-          />
-        </Animated.View>
+        <AnimatedRemoveButton
+          style={[animatedButton]}
+          onPress={() => setToDelete(item.id)}
+        >
+          <TouchableOpacity>
+            <Ionicons name="ios-remove-circle-sharp" size={25} color={"red"} />
+          </TouchableOpacity>
+        </AnimatedRemoveButton>
 
         <Animated.Text
           style={[{ ...styles.text, opacity: edit ? 0.5 : 1 }, animatedText]}
         >
-          Wed 29 Nov, 23:10:14 PM
+          {item.text}
         </Animated.Text>
         <Ionicons
           name="chevron-forward"
@@ -78,14 +101,29 @@ const Item = ({ edit }: Props) => {
           color={"gray"}
           style={{ marginLeft: "auto", opacity: edit ? 0.5 : 1 }}
         />
-      </AnimatedTouchable>
-    </View>
+      </TouchableOpacity>
+      {toDelete === item.id ? (
+        <TouchableOpacity
+          style={{
+            backgroundColor: "red",
+            paddingHorizontal: 10,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: "white" }}>Delete</Text>
+        </TouchableOpacity>
+      ) : (
+        <></>
+      )}
+    </Animated.View>
   );
 };
 
 export default Item;
 
 const styles = StyleSheet.create({
+  main: { backgroundColor: "white", flexDirection: "row" },
   container: {
     flexDirection: "row",
     alignItems: "center",
@@ -97,6 +135,5 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 17,
     fontWeight: "400",
-    // transform: [{ translateX: 40 }],
   },
 });
